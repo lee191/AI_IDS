@@ -1,0 +1,21 @@
+DNN 공격 유형별 탐지 개수(개인수집):
+PROBE     1890
+NORMAL    1742
+DOS       1064
+
+DNN 공격 유형별 탐지 개수(개인수집):
+NORMAL    2074
+PROBE     1926
+DOS       1088
+
+CNN 공격 유형별 탐지 개수(개인수집):
+NORMAL    3139
+PROBE     1257
+DOS        282
+R2L         18
+
+CNN 공격 유형별 탐지 개수(개인수집):
+NORMAL    3509
+PROBE     1262
+DOS        299
+R2L         18
