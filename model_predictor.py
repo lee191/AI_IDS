@@ -47,6 +47,8 @@ def predict_model(data):
     #     if predicted_indices[i] != 0 and float(predicted_probs[i][:-1]) < 90:
     #         predicted_indices[i] = 1
     #         predicted_probs[i] = '90% 이하'
+    
+    
 
     # 예측된 레이블 디코딩
     predicted_labels = le_label.inverse_transform(predicted_indices)
