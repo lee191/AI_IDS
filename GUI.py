@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QLabel, QHBoxLayout, QMessageBox, QProgressBar
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QHeaderView, QPushButton
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton
 from PyQt5.QtWidgets import QInputDialog,QSplitter
 from PyQt5.QtCore import QTimer,Qt
 from PyQt5.QtChart import QPieSeries, QChart, QChartView
@@ -10,7 +10,7 @@ import threading
 from datetime import datetime, timedelta
 import subprocess
 import socket
-import tempfile
+
 
 
 def resource_path(relative_path):
@@ -78,8 +78,10 @@ class IPListDialog(QDialog):
             with open(resource_path('black_list.txt'), 'r') as f:
                 ips = f.readlines()
             with open(resource_path('black_list.txt'), 'w') as f:
-                ips = [line for line in ips if line.strip() != ip]
+                # /t로 구분된 IP 주소와 시간을 분리
+                ips = [line for line in ips if line.split('\t')[0] != ip]
                 f.writelines(ips)
+                
             self.update_ip_list()
             # 차단 규칙 제거
             unblock_ip(ip)
@@ -110,9 +112,10 @@ class IPListDialog(QDialog):
 class PacketCaptureGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.is_auto_mode = True  # 초기에 자동 모드를 활성화
         self.init_ui()
         self.capture_thread = None
+        self.is_auto_mode = False  # 초기 모드를 수동으로 설정
+
 
     def init_ui(self):
         # 위젯 설정
@@ -149,9 +152,9 @@ class PacketCaptureGUI(QMainWindow):
         button_layout = QHBoxLayout()
         info_layout.addLayout(button_layout)
         # 자동 수동 토글 버튼 생성 및 설정
-        self.toggle_button = QPushButton("자동", self)
+        self.toggle_button = QPushButton("수동", self)
         self.toggle_button.setCheckable(True)
-        self.toggle_button.setChecked(True)
+        self.toggle_button.setChecked(False)
         self.toggle_button.toggled.connect(self.toggle_mode)
         button_layout.addWidget(self.toggle_button)
         
@@ -211,7 +214,7 @@ class PacketCaptureGUI(QMainWindow):
         # 실시간 패킷 정보 테이블 업데이트 타이머
         self.packet_table_timer = QTimer(self)
         self.packet_table_timer.timeout.connect(self.update_packet_table)
-        self.packet_table_timer.start(100)  # 1초마다 패킷 테이블 업데이트
+        self.packet_table_timer.start(100)  # 0.1초마다 패킷 테이블 업데이트
     
 
         # 윈도우 설정
@@ -325,11 +328,11 @@ class PacketCaptureGUI(QMainWindow):
         try:
             data = pd.read_csv(resource_path('all_packets_with_predictions.csv'))
             data['timestamp'] = pd.to_datetime(data['timestamp'])
-            time_threshold = datetime.now() - timedelta(seconds=30)
+            time_threshold = datetime.now() - timedelta(seconds=10)
             recent_data = data[data['timestamp'] >= time_threshold]
             attack_counts = recent_data['predicted_label'].value_counts()
             
-            count = 3  # 임계값
+            count = 5  # 임계값
             for attack_type in ['DOS', 'Probe', 'R2L', 'U2R']:
                 if attack_counts.get(attack_type, 0) >= count:
                     attacker_ip = recent_data[recent_data['predicted_label'] == attack_type]['src_ip'].values[0]
@@ -339,17 +342,28 @@ class PacketCaptureGUI(QMainWindow):
                     
                     # 수동 모드일 때만 팝업창을 띄웁니다.
                     if not self.is_auto_mode:
-                        reply = QMessageBox.question(self, '알람', f"{attack_type} 공격이 감지되었습니다. {attacker_ip} IP를 차단하시겠습니까?", QMessageBox.Yes | QMessageBox.No)
-                        if reply == QMessageBox.Yes:
-                            block_ip(attacker_ip)
-  
+                        # 블랙리스트와 하이트리스트에 없는 IP 주소만 팝업창을 띄웁니다.
+                        if attacker_ip not in open(resource_path('black_list.txt')).read() and attacker_ip not in open(resource_path('white_list.txt')).read():
+                            reply = QMessageBox.question(self, '알람', f"{attack_type} 공격이 감지되었습니다. {attacker_ip} IP를 차단하시겠습니까?", QMessageBox.Yes | QMessageBox.No)
+                            if reply == QMessageBox.Yes:
+                                block_ip(attacker_ip)
+                            if reply == QMessageBox.No:
+                                # 화이트리스트 오픈
+                                with open(resource_path('white_list.txt'), 'r') as f:
+                                    current_ips = f.readlines()
+                                
+                                # 중복된 IP인지 확인하고 중복이 아니면 파일에 IP를 추가합니다.
+                                if attacker_ip.strip() not in [ip.strip() for ip in current_ips]:
+                                    with open(resource_path('white_list.txt'), 'a') as f:
+                                        f.write(f"{attacker_ip}\n")
                                     
                     # 자동 모드일 때는 자동으로 차단합니다.
                     if self.is_auto_mode:
-                        block_ip(attacker_ip)
-                        with open(resource_path('black_list.txt'), 'a') as f:
-                            if attacker_ip not in f.read():
-                                f.write(f"{attacker_ip}\n")
+                        if attacker_ip not in open(resource_path('black_list.txt')).read():
+                            block_ip(attacker_ip)
+                            with open(resource_path('black_list.txt'), 'a') as f:
+                                if attacker_ip not in f.read():
+                                    f.write(f"{attacker_ip}\n")
 
         except Exception as e:
             print(f"Error updating alarm: {e}")
@@ -446,8 +460,12 @@ def block_ip(ip_address):
         # 중복된 IP인지 확인하고 중복이 아니면 파일에 IP를 추가합니다.
         if ip_address.strip() not in [ip.strip() for ip in current_ips]:
             with open(resource_path('black_list.txt'), 'a') as f:
-                f.write(f"{ip_address}\n")
-    
+                f.write(f"{ip_address}\t")
+                # 차단된 시간 시,분,초 기록
+                now = datetime.now()
+                current_time = now.strftime("%H:%M:%S")
+                f.write(f"{current_time}\n")
+                    
     except subprocess.CalledProcessError as e:
         print(f"Failed to block IP {ip_address}: {e}")
 

@@ -63,6 +63,12 @@ def remove_pf_rule(ip_address):
     except subprocess.CalledProcessError as e:
         # 규칙 제거 실패 시 오류 메시지 출력
         print(f"Failed to remove block rules: {e}")
-# 예시 사용법
-ip_to_block = "125.209.230.135"
-unblock_ip(ip_to_block)
+
+
+# 블랙리스트 오픈 후 출력
+with open('black_list.txt', 'r') as f:
+    blacklist = f.read().splitlines()
+    # 시간 부분 제거
+    blacklist = [ip.split()[0] for ip in blacklist]
+    print(blacklist)
+    

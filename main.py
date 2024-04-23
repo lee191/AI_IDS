@@ -58,29 +58,29 @@ def packet_capture_filter(packet):
     return False
 
 
-## 전체 패킷 캡처 ##
-def start_packet_capture():
-    try:
-        global capturing
-        capturing = True
-        sniff(prn=lambda packet: process_packet(packet, packet_info), stop_filter=packet_capture_filter, filter="ip")
-    except Exception as e:
-        print(e)
+# ## 전체 패킷 캡처 ##
+# def start_packet_capture():
+#     try:
+#         global capturing
+#         capturing = True
+#         sniff(prn=lambda packet: process_packet(packet, packet_info), stop_filter=packet_capture_filter, filter="ip")
+#     except Exception as e:
+#         print(e)
         
         
 #####################      
 ## 특정 ip 주소만 캡처 ##
 #####################
 
-# def start_packet_capture():
-#     try:
-#         global capturing
-#         capturing = True
-#         target_ip = "192.168.219.109"
-#         filter_condition = f"ip and (src {target_ip} or dst {target_ip})"
-#         sniff(prn=lambda packet: process_packet(packet, packet_info), stop_filter=packet_capture_filter, filter=filter_condition)
-#     except Exception as e:
-#         print(e)
+def start_packet_capture():
+    try:
+        global capturing
+        capturing = True
+        target_ip = "192.168.0.5"
+        filter_condition = f"ip and (src {target_ip} or dst {target_ip})"
+        sniff(prn=lambda packet: process_packet(packet, packet_info), stop_filter=packet_capture_filter, filter=filter_condition)
+    except Exception as e:
+        print(e)
 
 def stop_packet_capture():
     global capturing

@@ -81,24 +81,24 @@ X_train, X_test, y_train, y_test = train_test_split(X, data_labels_one_hot, test
 
 # 모델 구성
 model = Sequential([
-    Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=(X_train.shape[1], 1)),
+    Conv1D(filters=128, kernel_size=6, activation='relu', input_shape=(X_train.shape[1], 1)),
     BatchNormalization(),
     Dropout(0.5),
-    Conv1D(filters=32, kernel_size=3, activation='relu'),
+    Conv1D(filters=64, kernel_size=6, activation='relu'),
     BatchNormalization(),
     Flatten(),
-    Dense(64, activation='relu'),
+    Dense(128, activation='relu'),
     Dropout(0.5),
     Dense(y_train.shape[1], activation='softmax')
 ])
 # 최적화 알고리즘 선택
-optimizer = Adam(learning_rate=0.0001)  # SGD 등 다른 최적화 알고리즘으로 변경 가능
+optimizer = Adam(learning_rate=0.00001)  # SGD 등 다른 최적화 알고리즘으로 변경 가능
 
 # 모델 컴파일
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # 모델 훈련
-history = model.fit(X_train, y_train, epochs=80, validation_split=0.2, batch_size=64)
+history = model.fit(X_train, y_train, epochs=1000, validation_split=0.2, batch_size=64)
 
 
 # 모델 저장
