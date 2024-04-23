@@ -76,7 +76,7 @@ def start_packet_capture():
     try:
         global capturing
         capturing = True
-        target_ip = "192.168.0.5"
+        target_ip = "192.168.219.192"
         filter_condition = f"ip and (src {target_ip} or dst {target_ip})"
         sniff(prn=lambda packet: process_packet(packet, packet_info), stop_filter=packet_capture_filter, filter=filter_condition)
     except Exception as e:

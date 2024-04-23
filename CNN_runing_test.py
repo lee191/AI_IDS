@@ -98,7 +98,7 @@ optimizer = Adam(learning_rate=0.00001)  # SGD 등 다른 최적화 알고리즘
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # 모델 훈련
-history = model.fit(X_train, y_train, epochs=1000, validation_split=0.2, batch_size=64)
+history = model.fit(X_train, y_train, epochs=500, validation_split=0.2, batch_size=128)
 
 
 # 모델 저장
